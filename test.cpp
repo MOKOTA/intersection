@@ -5,6 +5,7 @@
 #include "opencv2/videoio.hpp"
 #include "opencv2/highgui.hpp"
 #include <stdio.h>
+#include<deque>
 
 using namespace std;
 using namespace cv;
@@ -79,6 +80,7 @@ int main(int argc, const char** argv)
 	Mat img0, img, fgmask, fgimg;
 	//int framecount = 1;
 	double t = (double)getTickCount();
+	int current_frame = 0;
 	for (;;)
 	{
 		cap >> img0;
@@ -92,13 +94,43 @@ int main(int argc, const char** argv)
 			fgimg.create(img.size(), img.type());
 
 		//update the model
+		current_frame = cap.get(CV_CAP_PROP_POS_FRAMES);
 		bg_model->apply(img, fgmask, update_bg_model ? -1 : 0);
+
 		if (1)
 		{
 			
 			medianBlur(fgmask, fgmask, 3);//(fgmask, fgmask, Size(11, 11), 3.5, 3.5);
 			//threshold(fgmask, fgmask, 10, 255, THRESH_BINARY);
 			adaptiveThreshold(fgmask, fgmask, 255, CV_ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY, 3, 3);
+			if (current_frame > 150)
+			{
+				//CvMemStorage *pcmStorage = cvCreateMemStorage();
+				//CvSeq *pcvSeq = NULL;
+				std::vector<std::vector<cv::Point> > contours;
+				findContours(fgmask, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
+				Mat contour_img(fgmask.size(), CV_8UC3, cv::Scalar(0, 0, 0));
+				//Mat contour_img(fgmask.size(), IPL_DEPTH_8U, 3);
+				//int nLevels = 5;
+				//cvRectangle(&contour_img, cvPoint(0, 0), cvPoint(contour_img.cols, contour_img.rows), CV_RGB(255, 255, 255), CV_FILLED);
+				cv::Scalar colors[3];
+				colors[0] = cv::Scalar(255, 0, 0);
+				colors[1] = cv::Scalar(0, 255, 0);
+				colors[2] = cv::Scalar(0, 0, 255);
+				float area = 0;
+				float max_area = fgmask.rows*fgmask.cols;
+				for (size_t idx = 0; idx < contours.size(); idx++) {
+					area = fabs(contourArea(contours[idx]));
+					if (area>max_area / 4.0 || area < 100)
+						continue;
+					cv::drawContours(contour_img, contours, idx, colors[idx % 3]);
+				}
+				vector<vector<cv::Point>> null;
+				null.swap(contours);
+				//drawContours(contour_img, contours, CV_RGB(255, 0, 0), CV_RGB(0, 255, 0), nLevels, 2);
+				//cvReleaseMemStorage(&pcmStorage);
+				imshow("contour", contour_img);
+			}
 			//Mat temp(fgmask.size(), IPL_DEPTH_8U, 1);
 			//temp = fgmask.clone();
 			//resize(temp, img, Size(640, 640 * img0.rows / img0.cols), INTER_LINEAR);
@@ -166,5 +198,6 @@ int main(int argc, const char** argv)
 		temp.release();
 	}*/
 	cap.release();
+
 	return 0;
 }

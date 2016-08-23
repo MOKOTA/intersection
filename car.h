@@ -4,6 +4,8 @@
 #include<stdint.h>
 #include<time.h>
 #include"video.h"
+#ifndef CAR_H
+#define CAR_H
 /*地点坐标*/
 struct position
 {
@@ -27,8 +29,9 @@ class car
 	long time;
 public:
 	car();
-	car(video,position,float)
+	car(video, position, float);
 	~car();
 	friend turn trace();//跟踪算法
 
 };
+#endif
