@@ -36,6 +36,33 @@ void m_binary(Mat &src)
 	adaptiveThreshold(src, src, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY, 5, 5);
 }
 
+vector<vector<Point>> feedback_position(Mat src)
+{
+				//CvMemStorage *pcmStorage = cvCreateMemStorage();
+				//CvSeq *pcvSeq = NULL;
+				std::vector<std::vector<cv::Point> > contours;
+				findContours(src, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
+				Mat contour_img(src.size(), CV_8UC3, cv::Scalar(0, 0, 0));
+				//Mat contour_img(fgmask.size(), IPL_DEPTH_8U, 3);
+				//int nLevels = 5;
+				//cvRectangle(&contour_img, cvPoint(0, 0), cvPoint(contour_img.cols, contour_img.rows), CV_RGB(255, 255, 255), CV_FILLED);
+				cv::Scalar colors[3];
+				colors[0] = cv::Scalar(255, 0, 0);
+				colors[1] = cv::Scalar(0, 255, 0);
+				colors[2] = cv::Scalar(0, 0, 255);
+				float area = 0;
+				float max_area = src.rows*src.cols;
+				for (size_t idx = 0; idx < contours.size(); idx++) {
+					area = fabs(contourArea(contours[idx]));
+					if (area>max_area / 4.0 || area < 100)
+						continue;
+					cv::drawContours(contour_img, contours, idx, colors[idx % 3]);
+				}
+				return contours;
+				//drawContours(contour_img, contours, CV_RGB(255, 0, 0), CV_RGB(0, 255, 0), nLevels, 2);
+				//cvReleaseMemStorage(&pcmStorage);
+	
+}
 //this is a sample for foreground detection functions
 int main(int argc, const char** argv)
 {
@@ -105,31 +132,10 @@ int main(int argc, const char** argv)
 			adaptiveThreshold(fgmask, fgmask, 255, CV_ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY, 3, 3);
 			if (current_frame > 150)
 			{
-				//CvMemStorage *pcmStorage = cvCreateMemStorage();
-				//CvSeq *pcvSeq = NULL;
-				std::vector<std::vector<cv::Point> > contours;
-				findContours(fgmask, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
-				Mat contour_img(fgmask.size(), CV_8UC3, cv::Scalar(0, 0, 0));
-				//Mat contour_img(fgmask.size(), IPL_DEPTH_8U, 3);
-				//int nLevels = 5;
-				//cvRectangle(&contour_img, cvPoint(0, 0), cvPoint(contour_img.cols, contour_img.rows), CV_RGB(255, 255, 255), CV_FILLED);
-				cv::Scalar colors[3];
-				colors[0] = cv::Scalar(255, 0, 0);
-				colors[1] = cv::Scalar(0, 255, 0);
-				colors[2] = cv::Scalar(0, 0, 255);
-				float area = 0;
-				float max_area = fgmask.rows*fgmask.cols;
-				for (size_t idx = 0; idx < contours.size(); idx++) {
-					area = fabs(contourArea(contours[idx]));
-					if (area>max_area / 4.0 || area < 100)
-						continue;
-					cv::drawContours(contour_img, contours, idx, colors[idx % 3]);
-				}
+				vector<vector<Point>> contours;
+				contours = feedback_position(fgmask);
 				vector<vector<cv::Point>> null;
 				null.swap(contours);
-				//drawContours(contour_img, contours, CV_RGB(255, 0, 0), CV_RGB(0, 255, 0), nLevels, 2);
-				//cvReleaseMemStorage(&pcmStorage);
-				imshow("contour", contour_img);
 			}
 			//Mat temp(fgmask.size(), IPL_DEPTH_8U, 1);
 			//temp = fgmask.clone();
